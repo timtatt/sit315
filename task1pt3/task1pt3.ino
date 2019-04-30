@@ -1,12 +1,21 @@
+#include <TimerOne.h>
+
 int ledPin = 13;
 int switchPin = 2;
 
 int trigPin = 11;
-int echoPin = 12;
+int echoPin = 3;
+
+int timerUs = 50;
+int tickCounts = 4000;
 
 volatile byte switchState = LOW;
-long duration;
-int distance;
+volatile long echoStart = 0;
+volatile long echoEnd = 0;
+volatile long echoDuration = 0;
+volatile long echoDistance = 0;
+volatile int triggerTimeCount = 0;
+volatile long rangeFlasherCounter = 0;
 
 void setup() {
   pinMode(trigPin, OUTPUT);
@@ -14,34 +23,72 @@ void setup() {
   
 	pinMode(switchPin, INPUT_PULLUP);
 	pinMode(ledPin, OUTPUT);
-  attachInterrupt(digitalPinToInterrupt(switchPin), onSwitchChange, CHANGE);
+
+  Timer1.initialize(timerUs);
+  Timer1.attachInterrupt(timerIsr);
+  
+//  attachInterrupt(digitalPinToInterrupt(switchPin), onSwitchChange, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(echoPin), onReceiveEcho, CHANGE);
 
 	Serial.begin(9600);
 }
 
 void loop() {
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
+  Serial.println(echoDuration / 58);
+  delay(100);
+}
 
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
+void timerIsr() {
+  triggerPulse();
+  distanceFlasher();
+}
 
-  duration = pulseIn(echoPin, HIGH);
-  distance = duration * 0.034 / 2;
+void triggerPulse() {
+  static volatile int state = 0;
+  if (!(--triggerTimeCount)) {
+    triggerTimeCount = tickCounts;
+    state = 1;
+  }
 
-//  Serial.print("Distance: ");
-//  Serial.print(distance);
-//  Serial.println("cm");
+  switch (state) {
+    case 1:
+      digitalWrite(trigPin, HIGH);
+      state = 2;
+      break;
+    case 2:
+      digitalWrite(trigPin, LOW);
+      state = 0;
+      break;
+  }
+}
 
-  if (distance < 10) {
-    Serial.println("Danger!");
-    digitalWrite(ledPin, HIGH);
-    delay(25);
-    digitalWrite(ledPin, LOW);
-    delay(25);
-  } else {
-	  delay(50);
+void onReceiveEcho() {
+  switch (digitalRead(echoPin)) {
+    case HIGH:
+      echoEnd = 0;
+      echoStart = micros();
+      break;
+    case LOW:
+      echoEnd = micros();
+      echoDuration = echoEnd - echoStart;
+      echoDistance = echoDuration / 58;
+      if (echoDistance < 10) {
+        Serial.println("Danger!");
+      }
+      break;
+  }
+}
+
+void distanceFlasher() {
+  if (--rangeFlasherCounter <= 0) {
+     if (echoDuration < 25000) {
+        rangeFlasherCounter = echoDuration * 2;
+     } else {
+        rangeFlasherCounter = 25000;
+     }
+     if (switchState == LOW) {
+        digitalWrite(ledPin, !digitalRead(ledPin));
+     }
   }
 }
 
