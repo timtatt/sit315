@@ -6,8 +6,8 @@
 #include<omp.h>
 #include<math.h>
 
-const int matrixSize = 500;
-const int numThreads = 2;
+const int matrixSize = 800;
+const int numThreads = 4;
 
 int rowsPerThread = floor(matrixSize / numThreads);
 int a[matrixSize][matrixSize];
@@ -90,8 +90,16 @@ int main() {
     // OpenMP (stupid fucker makes me use a next line {)
     #pragma omp parallel num_threads(numThreads)
     {
+        long threadId = omp_get_thread_num();
 
-        for (int i = 0; i < matrixSize; i++) {
+        int lowerBound = (threadId * rowsPerThread);
+        int upperBound = (threadId * rowsPerThread) + rowsPerThread;
+
+        if (upperBound > matrixSize) {
+            upperBound = matrixSize;
+        }
+
+        for (int i = lowerBound; i < upperBound; i++) {
             for (int j = 0; j < matrixSize; j++) {
                 c[i][j] = 0;
                 for (int k = 0; k < matrixSize; k++) {
@@ -99,6 +107,7 @@ int main() {
                 }
             }
         }
+
 
     }
 
