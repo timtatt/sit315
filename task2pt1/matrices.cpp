@@ -3,10 +3,11 @@
 #include<stdio.h>
 #include<time.h>
 #include<stdlib.h>
+#include<omp.h>
 #include<math.h>
 
-const int matrixSize = 200;
-const int numThreads = 4;
+const int matrixSize = 500;
+const int numThreads = 2;
 
 int rowsPerThread = floor(matrixSize / numThreads);
 int a[matrixSize][matrixSize];
@@ -84,6 +85,25 @@ int main() {
     timeTaken = (clock() - timer) / (double) CLOCKS_PER_SEC;
     cout << "Parallel Time Taken: " << timeTaken << "s\n";
 
+    timer = clock();
+
+    // OpenMP (stupid fucker makes me use a next line {)
+    #pragma omp parallel num_threads(numThreads)
+    {
+
+        for (int i = 0; i < matrixSize; i++) {
+            for (int j = 0; j < matrixSize; j++) {
+                c[i][j] = 0;
+                for (int k = 0; k < matrixSize; k++) {
+                    c[i][j] += a[i][j] * b[k][j];
+                }
+            }
+        }
+
+    }
+
+    timeTaken = (clock() - timer) / (double) CLOCKS_PER_SEC;
+    cout << "OpenMP Time Taken: " << timeTaken << "s\n";
 
     return 0;
 }
