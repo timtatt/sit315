@@ -3,17 +3,14 @@
 #include<stdio.h>
 #include<pthread.h>
 #include<time.h>
-
-const int seed = 10;
-const int arrayLength = 50;
-int array[arrayLength];
+#include<stack>
 
 using namespace std;
 
-struct parallelSortStruct {
-    int low;
-    int high;
-};
+const int seed = 10;
+const int arrayLength = 50;
+
+int array[arrayLength];
 
 void generateArray() {
     srand(seed);
@@ -54,37 +51,27 @@ int partitionArray(long low, long high) {
     }
 }
 
-void* parallelSortArray(void* args) {
-    struct parallelSortStruct* currentThreadArgs = (struct parallelSortStruct*) args;
-    if (currentThreadArgs->low < currentThreadArgs->high) {
-        int pivot = partitionArray(currentThreadArgs->low, currentThreadArgs->high);
-        pthread_t threads[2];
-
-        struct parallelSortStruct* threadArgs;
-        threadArgs->low = currentThreadArgs->low;
-        threadArgs->high = pivot;
-
-        pthread_create(&threads[0], NULL, parallelSortArray, (void *) threadArgs);
-        pthread_create(&threads[1], NULL, parallelSortArray, args);
-
-        pthread_join(threads[0], NULL);
-        pthread_join(threads[1], NULL);
-
-        // sortArray(args.low, pivot);
-        // sortArray(pivot + 1, args.high);
-    }
-
-
-    pthread_exit(NULL);
-}
-
 void sortArray(long low, long high) {
     if (low < high) {
         int pivot = partitionArray(low, high);
-        pthread_t threads[2];
 
         sortArray(low, pivot);
         sortArray(pivot + 1, high);
+    }
+}
+
+void parallelSortArray(long low, long high) {
+    if (low < high) {
+        int pivot = partitionArray(low, high);
+
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            sortArray(low, pivot);
+
+            #pragma omp section
+            sortArray(pivot + 1, high);
+        }
     }
 }
 
@@ -93,7 +80,6 @@ int main() {
     double timeTaken = 0;
 
     generateArray();
-    // printArray();
 
     // Sequential
     timer = clock();
@@ -102,14 +88,19 @@ int main() {
 
     timeTaken = (clock() - timer) / (double) CLOCKS_PER_SEC;
     printArray();
+    generateArray();
+    printArray();
     cout << "Time Taken: " << timeTaken << "\n";
 
     // OpenMP
     // Once again OpenMP the dog has made me use a { on the next line
-    struct parallelSortStruct* threadArgs;
-    threadArgs->low = 0;
-    threadArgs->high = arrayLength - 1;
-    parallelSortArray(threadArgs);
+    timer = clock();
+
+    parallelSortArray(0, arrayLength - 1);
+
+    timeTaken = (clock() - timer) / (double) CLOCKS_PER_SEC;
+    printArray();
+    cout << "Time Taken: " << timeTaken << "\n";
 
     return 0;
 }
