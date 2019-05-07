@@ -64,6 +64,8 @@ void parallelSortArray(long low, long high) {
     if (low < high) {
         int pivot = partitionArray(low, high);
 
+        // OpenMP
+        // Once again OpenMP the dog has made me use a { on the next line
         #pragma omp parallel sections
         {
             #pragma omp section
@@ -92,8 +94,6 @@ int main() {
     printArray();
     cout << "Time Taken: " << timeTaken << "\n";
 
-    // OpenMP
-    // Once again OpenMP the dog has made me use a { on the next line
     timer = clock();
 
     parallelSortArray(0, arrayLength - 1);
