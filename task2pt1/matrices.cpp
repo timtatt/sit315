@@ -6,7 +6,7 @@
 #include<omp.h>
 #include<math.h>
 
-const int matrixSize = 800;
+const int matrixSize = 100;
 const int numThreads = 4;
 
 int rowsPerThread = floor(matrixSize / numThreads);
