@@ -16,11 +16,11 @@ const int measurementsPerHour = 12;
 const string fileName = "testdata.csv";
 
 class TrafficEntry {
-    time_t timestamp;
-    int numCarsPassed;
-    int trafficLightId;
-
     public:
+        time_t timestamp;
+        int numCarsPassed;
+        int trafficLightId;
+
         TrafficEntry(time_t timestamp, int numCarsPassed, int trafficLightId) {
             this->timestamp = timestamp;
             this->numCarsPassed = numCarsPassed;
@@ -39,13 +39,15 @@ class TrafficLight {
         int carsPassed;
         static int nextTrafficId;
         TrafficLight() : TrafficLight(TrafficLight::nextTrafficId) {}
-        TrafficLight(int id) {
-            this->carsPassed = 0;
+        TrafficLight(int id) : TrafficLight(id, 0) {}
+        TrafficLight(int id, int carsPassed) {
+            this->carsPassed = carsPassed;
             this->id = id;
             if (this->id >= TrafficLight::nextTrafficId) {
                 TrafficLight::nextTrafficId = this->id + 1;
             }
         }
+
         TrafficEntry Simulate(time_t timestamp) {
             int carsPassed = rand() % maxCarsPassed + 1;
             return TrafficEntry {timestamp, carsPassed, this->id};
@@ -65,10 +67,8 @@ class TrafficProducer {
             for (int i = 0; i < measurementsPerHour * hoursGenerated; i++) {
                 for (int j = 0; j < numTrafficLights; j++) {
                     TrafficEntry entry = this->trafficLights[j].Simulate(currentTime);
-                    cout << entry.ToString();
                     dataFile << entry.ToString();
                 }
-                break;
                 currentTime += timeInterval * 60;
             }
 
@@ -96,7 +96,33 @@ class TrafficConsumer {
                 }
 
                 TrafficEntry entry {(time_t) stoi(item[0]), stoi(item[1]), stoi(item[2])};
-                cout << "Entry:" << entry.ToString();
+
+                // Find traffic light
+                list<TrafficLight>::iterator light;
+                bool foundLight = false;
+                for (light = trafficLights.begin(); light != trafficLights.end(); ++light) {
+                    if (light->id == entry.trafficLightId) {
+                        light->carsPassed += entry.numCarsPassed;
+                        foundLight = true;
+                        break;
+                    }
+                }
+
+                if (!foundLight) {
+                    trafficLights.push_back(TrafficLight {entry.trafficLightId, entry.numCarsPassed});
+                }
+            }
+
+            list<TrafficLight>::iterator light;
+
+            // Sorting TrafficLights by cars passed
+            trafficLights.sort([](const TrafficLight & a, const TrafficLight & b) {
+                return a.carsPassed > b.carsPassed;
+            });
+
+            cout << "Cars Passed\n---------------\n";
+            for (light = trafficLights.begin(); light != trafficLights.end(); ++light) {
+                cout << "TrafficLight " << light->id << ": " << light->carsPassed << "\n";
             }
 
             dataFile.close();

@@ -8,7 +8,7 @@
 using namespace std;
 
 const int seed = 10;
-const int arrayLength = 50;
+const int arrayLength = 500;
 
 int array[arrayLength];
 

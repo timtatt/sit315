@@ -1,12 +1,11 @@
 #include<iostream>
-#include<pthread.h>
 #include<stdio.h>
 #include<time.h>
 #include<stdlib.h>
 #include<omp.h>
 #include<math.h>
 #include<mpi.h>
-#include<CL/cl.hpp>
+#include<CL/opencl.h>
 
 const int matrixSize = 100;
 
